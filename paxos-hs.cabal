@@ -17,7 +17,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    CHANGELOG.md
 
 source-repository head
   type: git
@@ -40,7 +39,7 @@ library
       base >=4.7 && <5
     , optparse-generic ==1.5.2
     , scotty >=0.21
-    , text
+    , time ==1.12.2
   default-language: Haskell2010
 
 executable paxos-hs-exe
@@ -60,7 +59,7 @@ executable paxos-hs-exe
     , optparse-generic ==1.5.2
     , paxos-hs
     , scotty >=0.21
-    , text
+    , time ==1.12.2
   default-language: Haskell2010
 
 test-suite paxos-hs-test
@@ -81,5 +80,5 @@ test-suite paxos-hs-test
     , optparse-generic ==1.5.2
     , paxos-hs
     , scotty >=0.21
-    , text
+    , time ==1.12.2
   default-language: Haskell2010

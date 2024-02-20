@@ -25,8 +25,8 @@ default-extensions:
 dependencies:
 - base >= 4.7 && < 5
 - scotty >= 0.21
-- text
 - optparse-generic == 1.5.2
+- time == 1.12.2
 
 ghc-options:
 - -Wall
