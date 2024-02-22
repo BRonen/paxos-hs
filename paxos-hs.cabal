@@ -42,6 +42,7 @@ library
     , aeson ==2.1.2.1
     , base >=4.7 && <5
     , bytestring ==0.11.5.3
+    , http-types ==0.12.4
     , optparse-generic ==1.5.2
     , scotty >=0.21
     , stm ==2.5.1.0
@@ -69,6 +70,7 @@ executable paxos-hs-exe
     , aeson ==2.1.2.1
     , base >=4.7 && <5
     , bytestring ==0.11.5.3
+    , http-types ==0.12.4
     , optparse-generic ==1.5.2
     , paxos-hs
     , scotty >=0.21
@@ -98,6 +100,7 @@ test-suite paxos-hs-test
     , aeson ==2.1.2.1
     , base >=4.7 && <5
     , bytestring ==0.11.5.3
+    , http-types ==0.12.4
     , optparse-generic ==1.5.2
     , paxos-hs
     , scotty >=0.21
