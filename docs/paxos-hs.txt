@@ -7,16 +7,16 @@
 @package paxos-hs
 @version 0.1.0.0
 
-module App
+module Paxos
 app :: Int -> IO ()
-instance Data.Aeson.Types.ToJSON.ToJSON App.Proposal
-instance Data.Aeson.Types.FromJSON.FromJSON App.Proposal
-instance GHC.Generics.Generic App.Proposal
-instance GHC.Classes.Eq App.Proposal
-instance GHC.Show.Show App.Proposal
-instance GHC.Show.Show App.Proposer
-instance GHC.Classes.Eq App.Acceptor
-instance GHC.Show.Show App.Acceptor
-instance GHC.Classes.Eq App.Learner
-instance GHC.Show.Show App.Learner
-instance GHC.Show.Show App.Node
+instance Data.Aeson.Types.ToJSON.ToJSON Paxos.Proposal
+instance Data.Aeson.Types.FromJSON.FromJSON Paxos.Proposal
+instance GHC.Generics.Generic Paxos.Proposal
+instance GHC.Classes.Eq Paxos.Proposal
+instance GHC.Show.Show Paxos.Proposal
+instance GHC.Show.Show Paxos.Proposer
+instance GHC.Classes.Eq Paxos.Acceptor
+instance GHC.Show.Show Paxos.Acceptor
+instance GHC.Classes.Eq Paxos.Learner
+instance GHC.Show.Show Paxos.Learner
+instance GHC.Show.Show Paxos.Node
