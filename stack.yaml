@@ -68,3 +68,9 @@ extra-deps:
 # compiler-check: newer-minor
 
 notify-if-nix-on-path: false
+
+build:
+  haddock: false
+  haddock-arguments:
+    haddock-args:
+    - "--odir=./docs"
