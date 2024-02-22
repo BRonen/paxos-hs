@@ -21,7 +21,8 @@ data Node = Node {
   nodeId :: Int,
   addr :: String,
   proposer :: Maybe Proposer,
-  acceptor :: Maybe Acceptor
+  acceptor :: Maybe Acceptor,
+  learner :: Maybe Learner
   }
   deriving (Show)
 
@@ -43,11 +44,11 @@ data Acceptor = Acceptor {
 data Learner = Learner {
   commitedProposal :: Maybe Proposal
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 initialProposer :: Proposer
 initialProposer = Proposer {
-  proposerId = 0 -- TODO: implement monotonic accumulator
+  proposerId = 0 -- TODO: implement monotonic counter
   }
 
 initialAcceptor :: Acceptor
@@ -56,37 +57,47 @@ initialAcceptor = Acceptor {
   acceptedProposal = Nothing
   }
 
+initialLearner :: Learner
+initialLearner = Learner {
+  commitedProposal = Nothing
+  }
+
 initialnodes :: [Node]
 initialnodes = [
   Node {
     nodeId = 1,
     addr = "http://0.0.0.0:4000",
     proposer = Just initialProposer,
-    acceptor = Nothing
+    acceptor = Nothing,
+    learner = Nothing
     },
   Node {
     nodeId = 2,
     addr = "http://0.0.0.0:4001",
     proposer = Nothing,
-    acceptor = Just initialAcceptor
+    acceptor = Just initialAcceptor,
+    learner = Nothing
     },
   Node {
     nodeId = 3,
     addr = "http://0.0.0.0:4002",
     proposer = Just initialProposer,
-    acceptor = Just initialAcceptor
+    acceptor = Just initialAcceptor,
+    learner = Nothing
     },
   Node {
     nodeId = 4,
     addr = "http://0.0.0.0:4003",
     proposer = Just initialProposer,
-    acceptor = Just initialAcceptor
+    acceptor = Just initialAcceptor,
+    learner = Nothing
     },
   Node {
     nodeId = 5,
     addr = "http://0.0.0.0:4004",
     proposer = Just initialProposer,
-    acceptor = Just initialAcceptor
+    acceptor = Just initialAcceptor,
+    learner = Just initialLearner
     }
   ]
 
@@ -121,6 +132,15 @@ updateAcceptorProposal newProposal node'@(Node { acceptor=(Just acceptor') }) =
     }
 updateAcceptorProposal _ n = n
 
+updateLearnerProposal :: Proposal -> Node -> Node
+updateLearnerProposal newProposal node'@(Node { learner=(Just learner') }) =
+  node' {
+    learner = Just $ learner' {
+      commitedProposal = Just newProposal
+      }
+    }
+updateLearnerProposal _ n = n
+
 createProposal :: Maybe String -> IO Proposal
 createProposal value = do
   timestamp <- (round . (* 1000)) <$> getPOSIXTime
@@ -148,8 +168,16 @@ sendCommit :: Proposal -> Node -> IO (Either String ResponseCode)
 sendCommit proposal node@(Node { addr = addr' }) = do
   print $ "commiting: " <> show proposal
   print $ "to: " <> show node
-  let req = postRequestWithBody (addr' <> "/acceptor/commit") "application/json" $ BLU.toString $ encode proposal
-  response <- simpleHTTP req
+  response <- simpleHTTP $ postRequestWithBody (addr' <> "/acceptor/commit") "application/json" $ BLU.toString $ encode proposal
+  case response of
+    Right res -> pure $ Right $ rspCode res
+    Left err -> do
+      print err
+      pure $ Left $ show err
+
+sendLearner :: Proposal -> Node -> IO (Either String ResponseCode)
+sendLearner proposal node@(Node { addr = addr' }) = do
+  response <- simpleHTTP $ postRequestWithBody (addr' <> "/learner") "application/json" $ BLU.toString $ encode proposal
   case response of
     Right res -> pure $ Right $ rspCode res
     Left err -> do
@@ -198,13 +226,13 @@ postPrepare stateTM = do
           liftIO . atomically $ modifyTVar' stateTM $ updateAcceptorLastId $ proposalId proposal
           self <- liftIO . atomically $ readTVar stateTM
           liftIO $ print $ "prepare state: " <> show self
-          -- TODO: drop timestamp and use a distributed monotonic accumulator
+          -- TODO: drop timestamp and use a distributed monotonic counter
           -- text $ T.pack $ show $ lastProposalId acceptor'
           status ok200
     _ -> status unauthorized401
 
-postCommit :: TVar Node -> ActionM ()
-postCommit stateTM = do
+postCommit :: TVar Node -> [Node] -> ActionM ()
+postCommit stateTM learners = do
   proposal :: Proposal <- jsonData
   liftIO $ print $ "commit received: " <> show proposal
   self' <- liftIO . atomically $ readTVar stateTM
@@ -216,6 +244,7 @@ postCommit stateTM = do
           status conflict409
           text "Error while being commited"
         else do
+          liftIO $ sequence $ map (sendLearner proposal) learners
           liftIO . atomically $ modifyTVar' stateTM $ updateAcceptorProposal proposal
           self <- liftIO . atomically $ readTVar stateTM
           liftIO $ print $ "commit state: " <> show self
@@ -228,7 +257,27 @@ getProposal stateTM = do
   case self' of
     Node { acceptor=(Just acceptor') } -> do
       text $ T.pack $ show $ acceptedProposal acceptor'
-    _ -> status unauthorized401 
+    _ -> status unauthorized401
+
+postLearner :: TVar Node -> ActionM ()
+postLearner stateTM = do
+  proposal :: Proposal <- jsonData
+  liftIO $ print $ "learn received: " <> show proposal
+  self' <- liftIO . atomically $ readTVar stateTM
+  liftIO $ print $ "learn state: " <> show self'
+  case self' of
+    Node { learner=(Just learner') } -> do
+      liftIO . atomically $ modifyTVar' stateTM $ updateLearnerProposal proposal
+      status ok200
+    _ -> status unauthorized401
+
+getLearner :: TVar Node -> ActionM ()
+getLearner stateTM = do
+  self' <- liftIO . atomically $ readTVar stateTM
+  case self' of
+    Node { learner=(Just learner') } -> do
+      text $ T.pack $ show $ commitedProposal learner'
+    _ -> status unauthorized401
 
 app :: Int -> IO ()
 app selfId = do
@@ -236,12 +285,15 @@ app selfId = do
   case paxos of
     Right (self, nodes) -> do
       let acceptors = filter (\(Node { acceptor=acceptor' }) -> Nothing /= acceptor') nodes
+      let learners = filter (\(Node { learner=learner' }) -> Nothing /= learner') nodes
       state :: TVar Node <- newTVarIO self
       scotty (getPort self) $ do
         post "/proposer" $ postProposal state acceptors
         post "/acceptor/prepare" $ postPrepare state
-        post "/acceptor/commit" $ postCommit state
-        get "/acceptor" $ getProposal state
+        post "/acceptor/commit" $ postCommit state learners
+        get "/acceptor/debug" $ getProposal state
+        post "/learner" $ postLearner state
+        get "/learner" $ getLearner state
         post "/" $ do
           status imATeapot418
           text "Hello World"
