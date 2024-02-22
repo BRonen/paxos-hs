@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Options.Generic (getRecord)
-import App (app)
+import Paxos (app)
 
 getNodeId :: IO Int
 getNodeId = getRecord "Paxos-hs"

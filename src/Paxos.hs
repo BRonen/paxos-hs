@@ -1,4 +1,4 @@
-module App
+module Paxos
   ( app
   ) where
 
