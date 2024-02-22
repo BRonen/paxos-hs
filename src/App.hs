@@ -85,12 +85,12 @@ createProposal value = do
   pure $ Proposal { proposalId = timestamp, proposalValue = value }
  -}
 
-setupPaxos :: IO (Node, [Node])
+setupPaxos :: IO (Either String (Node, [Node]))
 setupPaxos = do
   selfId <- getNodeId
   case getNodes selfId of
-    (Nothing, _) -> error "Invalid id"
-    (Just self, nodes) -> pure $ (self, nodes)
+    (Nothing, _) -> pure $ Left "Invalid id"
+    (Just self, nodes) -> pure $ Right (self, nodes)
 
 {- sendProposal :: Proposal -> [Node] -> IO ()
 sendProposal proposal _ = do
@@ -127,8 +127,11 @@ postPrepare stateTM = do
 
 app :: IO ()
 app = do
-  (self, nodes) <- setupPaxos
-  state <- newTVarIO self :: IO (TVar Node)
-  scotty (port self) $ do
-    get "/proposer" $ getProposal state nodes
-    post "/acceptor/prepare" $ postPrepare state
+  paxos <- setupPaxos
+  case paxos of
+    Right (self, nodes) -> do
+      state <- newTVarIO self :: IO (TVar Node)
+      scotty (port self) $ do
+        get "/proposer" $ getProposal state nodes
+        post "/acceptor/prepare" $ postPrepare state
+    Left err -> print err
