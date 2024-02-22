@@ -36,6 +36,7 @@ dependencies:
 - stm == 2.5.1.0
 - text == 2.0.2
 - http-types == 0.12.4
+- split == 0.2.5
 
 ghc-options:
 - -Wall

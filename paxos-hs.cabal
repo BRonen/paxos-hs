@@ -45,6 +45,7 @@ library
     , http-types ==0.12.4
     , optparse-generic ==1.5.2
     , scotty >=0.21
+    , split ==0.2.5
     , stm ==2.5.1.0
     , text ==2.0.2
     , time ==1.12.2
@@ -74,6 +75,7 @@ executable paxos-hs-exe
     , optparse-generic ==1.5.2
     , paxos-hs
     , scotty >=0.21
+    , split ==0.2.5
     , stm ==2.5.1.0
     , text ==2.0.2
     , time ==1.12.2
@@ -104,6 +106,7 @@ test-suite paxos-hs-test
     , optparse-generic ==1.5.2
     , paxos-hs
     , scotty >=0.21
+    , split ==0.2.5
     , stm ==2.5.1.0
     , text ==2.0.2
     , time ==1.12.2
