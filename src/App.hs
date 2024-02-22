@@ -15,16 +15,27 @@ import Network.HTTP (postRequestWithBody, rspBody, simpleHTTP)
 import Control.Concurrent.STM.TVar (TVar, newTVarIO, readTVar, modifyTVar')
 import GHC.Conc (atomically)
 
-data Node = Node { nodeId :: Int, port :: Int, proposer :: Maybe Proposer, acceptor :: Maybe Acceptor }
+data Node = Node {
+  nodeId :: Int,
+  port :: Int,
+  proposer :: Maybe Proposer,
+  acceptor :: Maybe Acceptor
+  }
   deriving (Show)
 
-data Proposal = Proposal { proposalId :: Int, proposalValue :: Maybe String }
+data Proposal = Proposal {
+  proposalId :: Int,
+  proposalValue :: Maybe String
+  }
   deriving (Show, Generic, FromJSON, ToJSON)
 
 data Proposer = Proposer { proposerId :: Int }
   deriving (Show)
 
-data Acceptor = Acceptor { lastProposalId :: Int , acceptedProposal :: Maybe Proposal }
+data Acceptor = Acceptor {
+  lastProposalId :: Int,
+  acceptedProposal :: Maybe Proposal
+  }
   deriving (Show)
 
 initialProposer :: Proposer
@@ -69,7 +80,6 @@ getNodes selfId = (
   filter (\(Node { nodeId = nodeId' }) -> selfId /= nodeId') initialnodes
   )
 
-
 updateAcceptorLastId :: Int -> Node -> Node
 updateAcceptorLastId newId node'@(Node { acceptor=(Just acceptor) }) =
   node' {
@@ -77,6 +87,7 @@ updateAcceptorLastId newId node'@(Node { acceptor=(Just acceptor) }) =
       lastProposalId = newId
       }
     }
+updateAcceptorLastId _ n = n
 
 {- 
 createProposal :: Maybe String -> IO Proposal
